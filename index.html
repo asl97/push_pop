@@ -68,12 +68,37 @@
                 display: flex;
                 flex-direction: column;
             }
+
+            #highscores {
+                position: absolute;
+                top: 0;
+                border-right: 2px black solid;
+                border-bottom: 2px black solid;
+                padding: 2px;
+            }
+            #scores {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr 1fr;
+                padding-bottom: 2px;
+                border-bottom: 2px black solid;
+            }
+            #scores_list > div {
+                display: flex;
+                justify-content: space-between;
+            }
         </style>
     </head>
     <body>
         <div id="game">
             <div id="options">
                 <span id="configure" onclick="toggle_configure_mode()">Configure Buttons</span>
+                <div id="highscores">
+                    <span>Highscores</span>
+                    <div id="scores"></div>
+                    <div id="scores_list">
+                        <span>play a game!</span>
+                    </div>
+                </div>
             </div>
             <div id="buttons">
                 <div id="top">
@@ -99,6 +124,95 @@
             </div>
         </div>
         <script>
+            class Highscores {
+                constructor() {
+                    this.stage_best = [];
+                    this.scores = [];
+                    this.session_split = [];
+                    this.session_total = 0;
+                    this.score_table = [];
+                    this.generate_highscore_table();
+                }
+                new_session(){
+                    this.reset_session_state();
+                    for (let i=1; i<9; i++){
+                        let [best, split, current] = this.score_table[i];
+                        split.textContent = '_';
+                        current.textContent = '_';
+                    }
+                }
+                reset_session_state(){
+                    this.session_split = [];
+                    this.session_total = 0;
+                }
+                end_session(stage, level){
+                    let p = performance.measure("stage-duration","stage-started");
+                    this.scores.push([stage, level, this.session_total+p.duration, this.session_split]);
+                    this.scores.sort((a,b)=>{
+                        if (a[0] != b[0]){
+                            return b[0] - a[0]
+                        } else if (a[1] != b[1]) {
+                            return b[1] - a[1]
+                        } else {
+                            return a[2] - b[2]
+                        }
+                    })
+                    if (this.scores.length > 5){this.scores.length = 5};
+                    this.update_highscore_list();
+                    this.reset_session_state();
+                }
+                log_stage(stage, time){
+                    let best = this.stage_best[stage]
+                    if (best === undefined || best > time){
+                        this.stage_best[stage] = time;
+                        this.score_table[stage][0].textContent = (time/1000).toFixed(2);
+                    }
+                    this.session_total += time;
+                    this.session_split.push(this.session_total);
+                    let best_split = this.scores.at(0)?.at(3)?.at(this.session_split.length-1)
+                    if (best_split){
+                        let split = this.session_total - best_split;
+                        this.score_table[stage][1].textContent =  (split<=0?"":"+")+(split/1000).toFixed(2);
+                        this.score_table[stage][2].textContent = (this.session_total/1000).toFixed(2);
+                    } else {
+                        this.score_table[stage][2].textContent = (this.session_total/1000).toFixed(2);
+                    }
+                }
+                update_highscore_list(){
+                    let score_list = document.getElementById('scores_list');
+                    score_list.innerHTML = "";
+                    for (let [stage, level, total, split] of this.scores){
+                        let div = document.createElement('div');
+                        let s = document.createElement('span');
+                        let time = document.createElement('span');
+                        s.textContent = `${stage}-${level}:`
+                        time.textContent = `${(total/1000).toFixed(2)}`
+                        div.appendChild(s);
+                        div.appendChild(time);
+                        score_list.appendChild(div);
+                    }
+                }
+                generate_highscore_table(){
+                    let hdiv = document.getElementById('scores');
+                    for (let i=1; i<9; i++){
+                        let stage = document.createElement('span');
+                        let best = document.createElement('span');
+                        let split = document.createElement('span');
+                        let current = document.createElement('span');
+                        stage.textContent = `Stage ${i}:`;
+                        best.textContent = '_';
+                        split.textContent = '_';
+                        current.textContent = '_';
+                        hdiv.appendChild(stage);
+                        hdiv.appendChild(best);
+                        hdiv.appendChild(split);
+                        hdiv.appendChild(current);
+                        this.score_table[i] = [best, split, current];
+                    }
+                }
+            }
+            let highscores = new Highscores();
+
             let configuring_button_handler = undefined;
             let configuring_button = undefined;
 
@@ -177,6 +291,7 @@
             let level = 0;
 
             newgame = ()=>{
+                performance.mark("stage-started");
                 stage = 0;
                 level = -1;
                 let i = Math.floor(Math.random()*10)+1;
@@ -187,19 +302,27 @@
             async function nextgame(){
                 if (stage == 0){
                     stage += 1;
+                    performance.mark("stage-started");
+                    highscores.new_session();
                 }
+
                 level += 1
                 if (level == 5 || (stage == 8 && level == 1)){
+                    let p = performance.measure("stage-duration","stage-started");
+                    highscores.log_stage(stage, p.duration);
                     stage += 1;
                     level = 0;
                     let buttons = document.getElementById('buttons');
                     buttons.classList.add('winner')
                     let win_audio = new Audio('Win.mp3');
                     win_audio.play();
-                    await new Promise(resolve => {setTimeout(()=>{buttons.classList.remove('winner');resolve()}, 1000)})
+                    await new Promise(resolve => {setTimeout(resolve, 1000)})
+                    buttons.classList.remove('winner');
+                    performance.mark("stage-started");
                 }
 
                 if (stage == 9){
+                    highscores.end_session(stage, level);
                     newgame();
                     return
                 }
@@ -215,6 +338,7 @@
             }
 
             gameover = ()=>{
+                highscores.end_session(stage, level);
                 let sb = document.getElementById('button_spacebar');
                 let buttons = document.getElementById('buttons');
                 buttons.classList.add('loser');

@@ -225,6 +225,7 @@
             }
 
             gameover = ()=>{
+                let sb = document.getElementById('button_spacebar');
                 let buttons = document.getElementById('buttons');
                 buttons.classList.add('loser');
                 for (let i=1; i<=10; i++){
@@ -241,6 +242,7 @@
                     times += 1
                     if (times >= 5){
                         clearInterval(i);
+                        sb.classList.remove('active');
                         buttons.classList.remove('loser');
                         newgame();
                     }

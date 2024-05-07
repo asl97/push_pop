@@ -123,13 +123,6 @@
             update_mapper();
 
             button_press_listener = (e)=>{
-                let buttons = document.getElementById('buttons');
-                if (buttons.classList.contains('configure') ||
-                    buttons.classList.contains('loser') ||
-                    buttons.classList.contains('winner')){
-                    return
-                }
-
                 mapper.get(e.key.toUpperCase())?.click();          
                 if (e.key === ' '){
                     if (check_win()){
@@ -261,6 +254,12 @@
 
             handle_click_press = (button)=>{
                 let buttons = document.getElementById('buttons');
+                if (buttons.classList.contains('configure') ||
+                    buttons.classList.contains('loser') ||
+                    buttons.classList.contains('winner')){
+                    return
+                }
+
                 if (!buttons.classList.contains('configure')){
                     if (button.classList.contains('active')){
                         button.classList.remove('active');

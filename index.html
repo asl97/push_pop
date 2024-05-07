@@ -1,0 +1,281 @@
+<html>
+    <head>
+        <style>
+            #configure {
+                position: absolute;
+                display: block;
+                top: 0;
+                right: 0;
+                border-left: 2px black solid;
+                border-bottom: 2px black solid;
+                padding: 2px;
+            }
+            body{
+                margin: 0;
+            }
+            .configure {
+                background: lightgreen;
+            }
+            #buttons {
+                display: flex;
+                flex-direction: column;
+                place-items: center;
+                padding: 20vh 0;
+            }
+            #buttons > div {
+               margin: 1vh 0;
+            }
+            #buttons > div > span[id^="button_"] {
+                font-size: min(10vw, 10vh);
+                margin: 0 5vw;
+                padding: 10px;
+                border: 2px solid black;
+                border-radius: 0.4em;
+            }
+            #buttons:is(.winner) > div > span[id^="button_"] {
+                background-color: lightgreen;
+            }
+            #buttons > div > span:is(.configure) {
+                background-color: pink !important;
+            }
+            #buttons > div > span:is(.conflict),
+            #buttons:not(.configure) > div > span:is(.active){
+                background-color: red;
+            }
+            #configure_all_button {
+                font-size: min(8vw, 8vh);
+                border: 2px solid black;
+                border-radius: 0.2em;
+            }
+            #buttons div:has(#configure_all_button) {
+                margin-top: 5vh;
+            }
+            #buttons:not(.configure) #configure_all_button {
+                display: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="game">
+            <div id="options">
+                <span id="configure" onclick="toggle_configure_mode()">Configure Buttons</span>
+            </div>
+            <div id="buttons">
+                <div id="top">
+                    <span id="button_1">W</span>
+                    <span id="button_2">E</span>
+                    <span id="button_3">R</span>
+                </div>
+                <div id="middle">
+                    <span id="button_4">A</span>
+                    <span id="button_5">S</span>
+                    <span id="button_6">D</span>
+                    <span id="button_7">F</span>
+                </div>
+                <div id="bottom">
+                    <span id="button_8">Z</span>
+                    <span id="button_9">X</span>
+                    <span id="button_10">C</span>
+                </div>
+                <div>
+                    <span id="configure_all_button" onclick="configure_all()">Configure All</span>
+                </div>
+            </div>
+        </div>
+        <script>
+            let click_audio = new Audio('Click.mp3');
+            let crash_audio = new Audio('Crash.mp3');
+            let win_audio = new Audio('Win.mp3');
+            let configuring_button_handler = undefined;
+            let configuring_button = undefined;
+
+            cleanup = ()=>{
+                if (configuring_button_handler && configuring_button){
+                    configuring_button_handler.abort();
+                    configuring_button.classList.remove('configure')
+                }
+            }
+
+            let mapper = new Map();
+            update_mapper = ()=>{
+                mapper.clear();
+                for (let i=1; i<=10; i++){
+                    let button = document.getElementById(`button_${i}`);
+                    mapper.set(button.textContent, button);
+                }
+            }
+            update_mapper();
+
+            button_press_listener = (e)=>{
+                let buttons = document.getElementById('buttons');
+                if (buttons.classList.contains('configure') ||
+                    buttons.classList.contains('loser') ||
+                    buttons.classList.contains('winner')){
+                    return
+                }
+
+                mapper.get(e.key.toUpperCase())?.click();          
+                if (e.key === ' '){
+                    if (check_win()){
+                        click_audio.play();
+                        nextgame();
+                    }     
+                }
+            }
+            document.body.addEventListener("keydown", button_press_listener, {passive: true})
+
+            toggle_configure_mode = ()=>{
+                for (let i=1; i<=10; i++){
+                    let button = document.getElementById(`button_${i}`);
+                    if (button.classList.contains('conflict')){
+                        alert('Button Conflicts')
+                        return
+                    };
+                }
+
+                cleanup();
+                let buttons = document.getElementById('buttons');
+                buttons.classList.toggle('configure');
+                update_mapper();
+            }
+
+            check_conflict = ()=>{
+                let o = new Map();
+                for (let i=1; i<=10; i++){
+                    let button = document.getElementById(`button_${i}`);
+                    button.classList.remove('conflict');
+
+                    let charactor = button.textContent
+
+                    if (o.has(charactor)){
+                        let l = o.get(charactor);
+                        l.push(button);
+                        for (b of l){
+                            b.classList.add('conflict');
+                        }
+                    } else {
+                        let l = [button];
+                        o.set(charactor, l);
+                    }
+                }
+            }
+
+            let stage = 0;
+            let level = 0;
+
+            newgame = ()=>{
+                stage = 0;
+                level = -1;
+                let i = Math.floor(Math.random()*10)+1;
+                let button = document.getElementById(`button_${i}`);
+                button.classList.add('active');
+            }
+
+            async function nextgame(){
+                if (stage == 0){
+                    stage += 1;
+                }
+                level += 1
+                if (level == 5 || (stage == 8 && level == 1)){
+                    stage += 1;
+                    level = 0;
+                    let buttons = document.getElementById('buttons');
+                    buttons.classList.add('winner')
+                    win_audio.play();
+                    await new Promise(resolve => {setTimeout(()=>{buttons.classList.remove('winner');resolve()}, 1000)})
+                }
+
+                if (stage == 9){
+                    newgame();
+                    return
+                }
+
+                let index = [...Array(10).keys()];
+                for (let l = 0; l<2+stage; l++){
+                    let r = Math.floor(Math.random()*index.length);
+                    let i = index[r]+1;
+                    index.splice(r, 1);
+                    let button = document.getElementById(`button_${i}`);
+                    button.classList.add('active');
+                }
+            }
+
+            gameover = ()=>{
+                let buttons = document.getElementById('buttons');
+                buttons.classList.add('loser');
+                for (let i=1; i<=10; i++){
+                    let button = document.getElementById(`button_${i}`);
+                    button.classList.add('active');
+                }
+                let times = 0;
+                let i = setInterval(()=>{
+                    crash_audio.play();
+                    for (let i=1; i<=10; i++){
+                        let button = document.getElementById(`button_${i}`);
+                        button.classList.toggle('active');
+                    }
+                    times += 1
+                    if (times >= 5){
+                        clearInterval(i);
+                        buttons.classList.remove('loser');
+                        newgame();
+                    }
+                }, 200)
+            }
+
+            check_win = ()=>{
+                for (let i=1; i<=10; i++){
+                    let button = document.getElementById(`button_${i}`);
+                    if (button.classList.contains('active')){
+                        return false
+                    }
+                }
+                return true
+            }
+
+            handle_click_press = (button)=>{
+                let buttons = document.getElementById('buttons');
+                if (!buttons.classList.contains('configure')){
+                    if (button.classList.contains('active')){
+                        button.classList.remove('active');
+                        click_audio.play();
+                    } else {
+                        gameover()
+                    }
+                } else {
+                    cleanup();
+
+                    configuring_button_handler = new AbortController();
+                    configuring_button = button;
+                    button.classList.add('configure');
+                    return new Promise(resolve => {
+                        document.body.addEventListener("keydown",
+                            (e)=>{
+                                button.textContent = e.key.toUpperCase();
+                                cleanup();
+                                check_conflict();
+                                resolve();
+                            },
+                            { once: true, passive: true, signal: configuring_button_handler.signal }
+                        );
+                    });
+
+                }
+            }
+
+            async function configure_all(){
+                for (let i=1; i<=10; i++){
+                    let button = document.getElementById(`button_${i}`);
+                    await handle_click_press(button);
+                }
+            }
+
+            for (let i=1; i<=10; i++){
+                let button = document.getElementById(`button_${i}`);
+                button.onclick = ()=>{return handle_click_press(button)};
+            }
+
+            newgame()
+        </script>
+    </body>
+</html>

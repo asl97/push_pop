@@ -50,8 +50,22 @@
             #buttons div:has(#configure_all_button) {
                 margin-top: 5vh;
             }
-            #buttons:not(.configure) #configure_all_button {
+            #buttons:not(.configure) #configure_all_button,
+            #buttons:is(.configure) #button_spacebar {
                 display: none;
+            }
+            
+            #button_spacebar {
+                padding: 0 !important;
+                display: block;
+                text-align: center;
+                width: 60vw;
+            }
+
+            #extra {
+                place-items: center;
+                display: flex;
+                flex-direction: column;
             }
         </style>
     </head>
@@ -77,7 +91,8 @@
                     <span id="button_9">X</span>
                     <span id="button_10">C</span>
                 </div>
-                <div>
+                <div id="extra">
+                    <span id="button_spacebar" onclick="press_space()">***</span>
                     <span id="configure_all_button" onclick="configure_all()">Configure All</span>
                 </div>
             </div>
@@ -123,6 +138,14 @@
                 }
             }
             document.body.addEventListener("keydown", button_press_listener, {passive: true})
+
+            press_space = ()=>{
+                if (check_win()){
+                        let sb = document.getElementById('button_spacebar');
+                        sb.classList.remove('active');
+                        document.body.dispatchEvent(new KeyboardEvent('keydown', {'key': ' '}))
+                }    
+            }
 
             toggle_configure_mode = ()=>{
                 for (let i=1; i<=10; i++){
@@ -239,6 +262,10 @@
                     if (button.classList.contains('active')){
                         button.classList.remove('active');
                         click_audio.play();
+                        if (check_win()){
+                            let sb = document.getElementById('button_spacebar');
+                            sb.classList.add('active');
+                        }
                     } else {
                         gameover()
                     }

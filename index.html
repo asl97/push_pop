@@ -127,18 +127,16 @@
                 if (e.key === ' '){
                     if (check_win()){
                         click_audio.play();
+                        let sb = document.getElementById('button_spacebar');
+                        sb.classList.remove('active');
                         nextgame();
-                    }     
+                    }
                 }
             }
             document.body.addEventListener("keydown", button_press_listener, {passive: true})
 
             press_space = ()=>{
-                if (check_win()){
-                        let sb = document.getElementById('button_spacebar');
-                        sb.classList.remove('active');
-                        document.body.dispatchEvent(new KeyboardEvent('keydown', {'key': ' '}))
-                }    
+                document.body.dispatchEvent(new KeyboardEvent('keydown', {'key': ' '}))
             }
 
             toggle_configure_mode = ()=>{

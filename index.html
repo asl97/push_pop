@@ -99,9 +99,6 @@
             </div>
         </div>
         <script>
-            let click_audio = new Audio('Click.mp3');
-            let crash_audio = new Audio('Crash.mp3');
-            let win_audio = new Audio('Win.mp3');
             let configuring_button_handler = undefined;
             let configuring_button = undefined;
 
@@ -126,6 +123,7 @@
                 mapper.get(e.key.toUpperCase())?.click();          
                 if (e.key === ' '){
                     if (check_win()){
+                        let click_audio = new Audio('Click.mp3');
                         click_audio.play();
                         let sb = document.getElementById('button_spacebar');
                         sb.classList.remove('active');
@@ -196,6 +194,7 @@
                     level = 0;
                     let buttons = document.getElementById('buttons');
                     buttons.classList.add('winner')
+                    let win_audio = new Audio('Win.mp3');
                     win_audio.play();
                     await new Promise(resolve => {setTimeout(()=>{buttons.classList.remove('winner');resolve()}, 1000)})
                 }
@@ -225,7 +224,10 @@
                 }
                 let times = 0;
                 let i = setInterval(()=>{
-                    crash_audio.play();
+                    if (times%2==0){
+                        let crash_audio = new Audio('Crash.mp3');
+                        crash_audio.play();
+                    }
                     for (let i=1; i<=10; i++){
                         let button = document.getElementById(`button_${i}`);
                         button.classList.toggle('active');
@@ -261,6 +263,7 @@
                 if (!buttons.classList.contains('configure')){
                     if (button.classList.contains('active')){
                         button.classList.remove('active');
+                        let click_audio = new Audio('Click.mp3');
                         click_audio.play();
                         if (check_win()){
                             let sb = document.getElementById('button_spacebar');

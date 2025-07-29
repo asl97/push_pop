@@ -220,6 +220,8 @@
                 if (configuring_button_handler && configuring_button){
                     configuring_button_handler.abort();
                     configuring_button.classList.remove('configure')
+                    configuring_button_handler = undefined;
+                    configuring_button = undefined;
                 }
             }
 
@@ -378,7 +380,7 @@
 
             handle_click_press = (button)=>{
                 let buttons = document.getElementById('buttons');
-                if (buttons.classList.contains('configure') ||
+                if (configuring_button != undefined ||
                     buttons.classList.contains('loser') ||
                     buttons.classList.contains('winner')){
                     return
@@ -408,6 +410,7 @@
                                 button.textContent = e.key.toUpperCase();
                                 cleanup();
                                 check_conflict();
+								update_mapper();
                                 resolve();
                             },
                             { once: true, passive: true, signal: configuring_button_handler.signal }
